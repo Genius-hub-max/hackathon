@@ -2,8 +2,6 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-from PIL import Image
-import io
 import re
 from datetime import datetime
 import json
@@ -120,9 +118,6 @@ def login(data: LoginRequest):
 async def extract_prescription(file: UploadFile = File(...)):
     """Extract prescription details from uploaded image (simplified for demo)"""
     try:
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents))
-        
         # Simplified: return mock data for demo
         drug_name = "Lisinopril"
         strength = "10mg"
