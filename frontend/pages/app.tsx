@@ -15,6 +15,7 @@ export default function App() {
   const [showLocationInput, setShowLocationInput] = useState(false)
   const [user, setUser] = useState<string | null>(null)
   const [totalSavings, setTotalSavings] = useState(0)
+  const [selectedPharmacy, setSelectedPharmacy] = useState<any>(null)
 
   useEffect(() => {
     const loggedUser = localStorage.getItem('medfinder_user')
@@ -41,6 +42,7 @@ export default function App() {
   }
 
   const handlePrescriptionProcessed = async (data: any) => {
+    console.log('Prescription processed:', data)
     setDrugData(data)
     setShowLocationInput(true)
   }

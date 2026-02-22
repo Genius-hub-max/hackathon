@@ -1,5 +1,4 @@
-import { useState, useCallback } from 'react'
-import { useDropzone } from 'react-dropzone'
+import { useState } from 'react'
 
 interface Props {
   onProcessed: (data: any) => void
@@ -7,16 +6,16 @@ interface Props {
 
 export default function UploadPrescription({ onProcessed }: Props) {
   const [loading, setLoading] = useState(false)
-  const [manualEntry, setManualEntry] = useState(false)
+  const [manualEntry, setManualEntry] = useState(true) // Start with manual entry
   const [drugName, setDrugName] = useState('')
   const [strength, setStrength] = useState('')
   const [dosage, setDosage] = useState('')
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
     
     setLoading(true)
-    const file = acceptedFiles[0]
     const formData = new FormData()
     formData.append('file', file)
 
@@ -42,19 +41,19 @@ export default function UploadPrescription({ onProcessed }: Props) {
     } catch (error) {
       console.error('Upload failed:', error)
       alert('Failed to process prescription. Please try manual entry.')
+      setManualEntry(true)
     } finally {
       setLoading(false)
     }
-  }, [onProcessed])
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/*': ['.png', '.jpg', '.jpeg'], 'application/pdf': ['.pdf'] },
-    maxFiles: 1,
-  })
+  }
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!drugName.trim()) {
+      alert('Please enter a drug name')
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -67,9 +66,12 @@ export default function UploadPrescription({ onProcessed }: Props) {
       
       if (result.success) {
         onProcessed(result.data)
+      } else {
+        alert('Failed to process drug information')
       }
     } catch (error) {
       console.error('Manual entry failed:', error)
+      alert('Failed to process. Please check if backend is running.')
     } finally {
       setLoading(false)
     }
@@ -79,58 +81,68 @@ export default function UploadPrescription({ onProcessed }: Props) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="card">
-          <h3 className="text-2xl font-bold mb-6">Enter Prescription Details</h3>
+          <h3 className="text-2xl font-bold mb-6">Enter Medicine Details</h3>
           <form onSubmit={handleManualSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Drug Name *
+                Medicine Name *
               </label>
               <input
                 type="text"
                 value={drugName}
                 onChange={(e) => setDrugName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="e.g., Lisinopril"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                placeholder="e.g., Lisinopril, Atorvastatin, Metformin"
                 required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Strength
+                Strength (Optional)
               </label>
               <input
                 type="text"
                 value={strength}
                 onChange={(e) => setStrength(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="e.g., 10mg"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., 10mg, 20mg"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dosage
+                Dosage (Optional)
               </label>
               <input
                 type="text"
                 value={dosage}
                 onChange={(e) => setDosage(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="e.g., Once daily"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Once daily, Twice daily"
               />
             </div>
             <div className="flex gap-4">
-              <button type="submit" className="btn-primary flex-1" disabled={loading}>
-                {loading ? 'Processing...' : 'Find Prices'}
+              <button 
+                type="submit" 
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50"
+                disabled={loading}
+              >
+                {loading ? 'Processing...' : 'Find Prices →'}
               </button>
               <button
                 type="button"
                 onClick={() => setManualEntry(false)}
-                className="btn-secondary"
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg transition"
               >
-                Back to Upload
+                Upload Instead
               </button>
             </div>
           </form>
+          
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm text-gray-700">
+              <strong>Popular medicines:</strong> Lisinopril, Atorvastatin, Metformin, Amlodipine, Omeprazole
+            </p>
+          </div>
         </div>
       </div>
     )
@@ -139,26 +151,35 @@ export default function UploadPrescription({ onProcessed }: Props) {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="card">
-        <div
-          {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-            isDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300 hover:border-primary-400'
-          }`}
-        >
-          <input {...getInputProps()} />
-          <div className="text-6xl mb-4">📄</div>
+        <h3 className="text-2xl font-bold mb-6 text-center">Upload Prescription</h3>
+        
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-blue-400 transition">
+          <input
+            type="file"
+            id="prescription-upload"
+            accept="image/*,.pdf"
+            onChange={handleFileUpload}
+            className="hidden"
+            disabled={loading}
+          />
+          
           {loading ? (
             <div>
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-4"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
               <p className="text-gray-600">Processing prescription...</p>
             </div>
           ) : (
             <>
-              <h3 className="text-xl font-semibold mb-2">Upload Prescription</h3>
-              <p className="text-gray-600 mb-4">
-                {isDragActive ? 'Drop your prescription here' : 'Drag & drop or click to upload'}
-              </p>
-              <p className="text-sm text-gray-500">Supports: JPG, PNG, PDF</p>
+              <div className="text-6xl mb-4">📄</div>
+              <h4 className="text-xl font-semibold mb-2">Upload Your Prescription</h4>
+              <p className="text-gray-600 mb-4">Click to upload or drag and drop</p>
+              <p className="text-sm text-gray-500 mb-6">Supports: JPG, PNG, PDF</p>
+              <label
+                htmlFor="prescription-upload"
+                className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg cursor-pointer transition"
+              >
+                Choose File
+              </label>
             </>
           )}
         </div>
@@ -166,9 +187,9 @@ export default function UploadPrescription({ onProcessed }: Props) {
         <div className="mt-6 text-center">
           <button
             onClick={() => setManualEntry(true)}
-            className="text-primary-600 hover:text-primary-700 font-medium"
+            className="text-blue-600 hover:text-blue-700 font-semibold"
           >
-            Or enter drug details manually →
+            Or enter medicine name manually →
           </button>
         </div>
       </div>
